@@ -2,6 +2,11 @@ import random
 import time
 import sys
 from colorama import Fore, Style, init
+# --- Webhook/Flask imports for SSE server ---
+from flask import Flask, request, Response
+# --- CORS import ---
+from flask_cors import CORS
+import threading
 
 init(autoreset=True, convert=True, strip=False)
 
@@ -478,8 +483,8 @@ def fake_terminal_line():
         # Prepend header line before graph delimiter
         return [header_line, delim] + graph_lines + [delim_end]
 
-    # Solar system map chance (3%)
-    if random.random() < 0.03:
+    # Solar system map chance (1%)
+    if random.random() < 0.01:
         delim = Fore.GREEN + Style.BRIGHT + "==================== STAR SYSTEM MAP START ===================="
         delim_end = Fore.GREEN + Style.BRIGHT + "==================== STAR SYSTEM MAP END ======================"
         header_msg = Fore.GREEN + Style.BRIGHT + "[t] STAR SYSTEM SCAN: Orbital layout detected"
@@ -498,12 +503,34 @@ def fake_terminal_line():
     crew_msg = random.choice(crew_chat_msgs)
     crew_chat_line = f"{color}[{t}] CREW CHAT: [{crew_location}] {crew_rank} {crew_entity}: \"{crew_msg}\""
 
+    # Rich networking-themed data stream messages
+    data_stream_templates = [
+        "DATA STREAM ESTABLISHED on {channel}",
+        "MESH LINK ACTIVE on {channel}",
+        "UPLINK SPEED: {uplink:.1f} Mbps | DOWNLINK SPEED: {downlink:.1f} Mbps on {channel}",
+        "ROUTING TRAFFIC VIA {channel}: LINK STABLE",
+        "CHANNEL {channel}: HANDSHAKE COMPLETE",
+        "PACKET FLOW OPTIMAL on {channel}",
+        "SUBSPACE UPLINK SYNCED on {channel}",
+        "NETWORK PATH VERIFIED: {channel}",
+        "NODE CONNECTION: {channel} [SECURE]",
+        "BRIDGE ONLINE: {channel} LINKED"
+    ]
+    # Generate random uplink/downlink speeds for the speed template
+    uplink_speed = random.uniform(8.0, 120.0)
+    downlink_speed = random.uniform(8.0, 120.0)
+    data_stream_template = random.choice(data_stream_templates)
+    if "{uplink" in data_stream_template or "{downlink" in data_stream_template:
+        data_stream_line = f"{color}[{t}] {data_stream_template.format(channel=channel, uplink=uplink_speed, downlink=downlink_speed)}"
+    else:
+        data_stream_line = f"{color}[{t}] {data_stream_template.format(channel=channel)}"
+
     line_types = [
         f"{color}[{t}] [{channel}] {source} @ {location}: {evt}",
         f"{color}[{t}] SYSTEM STATUS: {source} -> {st}",
         f"{color}[{t}] TRANSMISSION: {source} reports '{evt}'",
         f"{color}[{t}] SENSOR {random.randint(101,999)}-{random.choice(['A','B','C'])}: {evt} near {location}",
-        f"{color}[{t}] --- DATA STREAM [{channel}] ---",
+        data_stream_line,
         crew_chat_line,
         detailed_log,
         incoming_transmission,
@@ -513,6 +540,115 @@ def fake_terminal_line():
         encryption_update,
         encryption_hash_line
     ]
+
+    # --- Asteroid Threat Assessment event (rare multi-line, before critical alert logic) ---
+    asteroid_threat_chance = 0.02
+    if random.random() < asteroid_threat_chance:
+        # Compose asteroid data
+        n_asteroids = random.randint(3, 6)
+        asteroid_lines = []
+        header = f"{Fore.CYAN + Style.BRIGHT}[{t}] ASTEROID THREAT ASSESSMENT:"
+        asteroid_lines.append(header)
+        for _ in range(n_asteroids):
+            aid = f"A-{random.randint(10000,99999)}"
+            size_km = random.uniform(0.05, 12.0)
+            speed_kms = random.uniform(5.0, 72.0)
+            distance_km = random.uniform(50000, 4000000)
+            # Risk: low, moderate, high, critical
+            risk_val = random.random()
+            if risk_val > 0.92:
+                risk = f"{Fore.RED + Style.BRIGHT}CRITICAL"
+            elif risk_val > 0.75:
+                risk = f"{Fore.YELLOW + Style.BRIGHT}HIGH"
+            elif risk_val > 0.4:
+                risk = f"{Fore.YELLOW}MODERATE"
+            else:
+                risk = f"{Fore.GREEN}LOW"
+            # Impact energy (in megatons TNT equivalent)
+            impact_energy = size_km * speed_kms * random.uniform(0.5, 2.5) * 7.5  # simplified formula
+            asteroid_lines.append(f"{Fore.CYAN + Style.BRIGHT}    Asteroid ID: {Fore.GREEN + Style.BRIGHT}{aid}")
+            asteroid_lines.append(f"{Fore.CYAN + Style.BRIGHT}        Size: {Fore.YELLOW}{size_km:.2f} km")
+            asteroid_lines.append(f"{Fore.CYAN + Style.BRIGHT}        Speed: {Fore.YELLOW}{speed_kms:.2f} km/s")
+            asteroid_lines.append(f"{Fore.CYAN + Style.BRIGHT}        Distance from Outpost: {Fore.YELLOW}{distance_km:,.0f} km")
+            asteroid_lines.append(f"{Fore.CYAN + Style.BRIGHT}        Trajectory Risk: {risk}")
+            asteroid_lines.append(f"{Fore.CYAN + Style.BRIGHT}        Potential Impact Energy: {Fore.YELLOW}{impact_energy:,.1f} MT")
+        # Maybe a summary line
+        if random.random() < 0.6:
+            summary_options = [
+                "All threats monitored. No immediate action required.",
+                "Trajectory adjustment recommended for outpost safety.",
+                "Automated defense systems on standby.",
+                "High-risk object detected: alerting command.",
+                "No objects on collision course at present.",
+                "Orbital scans updating in real-time.",
+            ]
+            asteroid_lines.append(f"{Fore.CYAN + Style.BRIGHT}    Summary: {Fore.YELLOW}{random.choice(summary_options)}")
+        return asteroid_lines
+
+    # --- Planetary Status Report event (rare multi-line) ---
+    planetary_status_chance = 0.02
+    if random.random() < planetary_status_chance:
+        # Sci-fi planet names, some reused from solar system map
+        planet_names = [
+            "Atka Prime", "Virel IV", "Qiln Majoris", "Lyris", "Dauntless", "Helios", "Zeta-7", "Obsidian", "Aurora", "Xalor", "Kyra", "Tycho", "Nyx", "Athena", "Sera", "Vega"
+        ]
+        planet = random.choice(planet_names)
+        distance = f"{random.uniform(0.2, 35.0):.2f} AU"
+        gravity = f"{random.uniform(0.4, 2.5):.2f} g"
+        atmosphere = random.choice([
+            "O2/N2 (breathable)", "CO2-dense", "Methane-rich", "Thin", "None", "Toxic", "O2/CO2 mix", "Sulfuric", "Ammonia traces", "High Argon"
+        ])
+        habitability = random.uniform(0, 1)
+        habitability_str = f"{habitability*100:.1f} %"
+        resource_levels = [
+            ("Water", random.uniform(0, 100)),
+            ("Iron", random.uniform(0, 100)),
+            ("Helium-3", random.uniform(0, 100)),
+            ("Organics", random.uniform(0, 100)),
+            ("Rare Elements", random.uniform(0, 100)),
+        ]
+        # Compose lines
+        header = f"{Fore.CYAN + Style.BRIGHT}[{t}] PLANETARY STATUS REPORT:"
+        lines = [header]
+        lines.append(f"{Fore.CYAN + Style.BRIGHT}    Planet: {Fore.GREEN + Style.BRIGHT}{planet}")
+        lines.append(f"{Fore.CYAN + Style.BRIGHT}    Distance: {Fore.YELLOW}{distance}")
+        lines.append(f"{Fore.CYAN + Style.BRIGHT}    Gravity: {Fore.YELLOW}{gravity}")
+        lines.append(f"{Fore.CYAN + Style.BRIGHT}    Atmosphere: {Fore.YELLOW}{atmosphere}")
+        # Color habitability: green if good, yellow if moderate, red if poor
+        if habitability > 0.7:
+            hcolor = Fore.GREEN + Style.BRIGHT
+        elif habitability > 0.3:
+            hcolor = Fore.YELLOW + Style.BRIGHT
+        else:
+            hcolor = Fore.RED + Style.BRIGHT
+        lines.append(f"{Fore.CYAN + Style.BRIGHT}    Habitability Index: {hcolor}{habitability_str}")
+        lines.append(f"{Fore.CYAN + Style.BRIGHT}    Resource Levels:")
+        for res, val in resource_levels:
+            # Green for high, yellow for mid, red for low
+            if val > 66:
+                rcolor = Fore.GREEN + Style.BRIGHT
+            elif val > 33:
+                rcolor = Fore.YELLOW + Style.BRIGHT
+            else:
+                rcolor = Fore.RED + Style.BRIGHT
+            lines.append(f"{Fore.CYAN + Style.BRIGHT}        - {res}: {rcolor}{val:.1f}%")
+        # Maybe add a note
+        notes = [
+            "No signs of intelligent life.",
+            "Surface storms detected.",
+            "Potential for terraforming.",
+            "Extreme temperature variations.",
+            "Rich in rare minerals.",
+            "Subsurface water confirmed.",
+            "Atmosphere requires filtration.",
+            "Hostile microbial life present.",
+            "Ideal candidate for outpost.",
+            "Magnetic field unstable.",
+        ]
+        if random.random() < 0.7:
+            note = random.choice(notes)
+            lines.append(f"{Fore.CYAN + Style.BRIGHT}    Note: {Fore.YELLOW}{note}")
+        return lines
 
     # Critical messages appear rarely, with blinking effect simulated by surrounding with !!!
     if random.random() < 0.1:
@@ -540,11 +676,95 @@ def slow_print(text, delay=0.0015):
             time.sleep(delay)
         print()
 
+
+# --- SSE/Webhook Server Setup ---
+# List of client event queues (thread-safe)
+import queue
+clients = []
+clients_lock = threading.Lock()
+
+app = Flask(__name__)
+# Enable CORS for all routes
+CORS(app)
+
+def broadcast_to_clients(message):
+    # message: string or list of strings
+    # For SSE, each line should be sent as a separate event (data: ...\n\n)
+    sse_datas = []
+    lines_to_send = []
+    if isinstance(message, list):
+        # Each list item is a full line, do not split further
+        lines_to_send = [str(line) for line in message]
+    else:
+        # message is a string: split on \n but preserve indentation and leading/trailing whitespace
+        # This will split on \n, but not strip leading spaces
+        lines_to_send = message.split('\n')
+
+    for l in lines_to_send:
+        sse_datas.append(f"data: {l}\n\n".encode("utf-8"))
+    with clients_lock:
+        for q in clients:
+            try:
+                for sse_data_bytes in sse_datas:
+                    q.put(sse_data_bytes, block=False)
+            except Exception:
+                pass
+
+# SSE streaming endpoint
+@app.route('/stream')
+def stream():
+    def event_stream(q):
+        try:
+            while True:
+                data = q.get()
+                # Ensure data is bytes
+                if isinstance(data, str):
+                    data = data.encode("utf-8")
+                yield data
+        except GeneratorExit:
+            pass
+
+    q = queue.Queue()
+    with clients_lock:
+        clients.append(q)
+    # Remove client on disconnect
+    def cleanup():
+        with clients_lock:
+            if q in clients:
+                clients.remove(q)
+    # Use Flask's Response with generator
+    return Response(event_stream(q), mimetype="text/event-stream", direct_passthrough=True)
+
+# Webhook POST endpoint (broadcasts posted message to all clients)
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    # Accept JSON or form or raw text
+    if request.is_json:
+        data = request.get_json()
+        msg = data.get('message', '')
+    elif request.form:
+        msg = request.form.get('message', '')
+    else:
+        msg = request.data.decode('utf-8')
+    if msg:
+        broadcast_to_clients(msg)
+        return {"status": "ok", "broadcasted": True}, 200
+    else:
+        return {"status": "error", "reason": "No message"}, 400
+
+def run_flask():
+    # Run Flask app on port 5000, allow connections from any interface
+    app.run(host="0.0.0.0", port=5050, threaded=True)
+
 if __name__ == "__main__":
     print(Fore.GREEN + Style.BRIGHT + "Booting Remote Outpost Terminal...\n")
-    time.sleep(2)
-
+    # Start Flask webhook/SSE server in background thread
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    # Main loop: generate and broadcast lines
     while True:
         line = fake_terminal_line()
-        slow_print(line, delay=0.0015)
-        time.sleep(random.uniform(0.3, 1.8))  # varied rhythm
+        # slow_print(line, delay=0.0015)
+        # Broadcast generated line to all SSE clients
+        broadcast_to_clients(line)
+        time.sleep(random.uniform(0.5, 3))  # varied rhythm
