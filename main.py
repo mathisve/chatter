@@ -1,6 +1,8 @@
+# Ensure required imports are present
 import random
 import time
 import sys
+import threading
 from colorama import Fore, Style, init
 # --- Webhook/Flask imports for SSE server ---
 from flask import Flask, request, Response
@@ -355,13 +357,130 @@ def fake_terminal_line():
     critical_color = Fore.RED + Style.BRIGHT
 
     crew_chat_msgs = [
-        "Coffee machine offline again.", "Anyone seen the rover?", "Stars look brighter tonight.",
-        "Lost the calibration data.", "System reboot scheduled at 0300.", "Alien artifact found nearby.",
-        "Rover stuck in the mud.", "Signal strength dropping fast.", "Emergency drill in 10 minutes.",
-        "New shipment of supplies arrived.", "Strange noises from the vents.", "Crew morale is high.",
-        "Power fluctuations in sector 9.", "Sensor array needs cleaning.", "Data backlog increasing.",
-        "Holo-deck malfunctioning.", "Lunch is served at 1200.", "Navigation charts updated.",
-        "Security lockdown lifted.", "Unexpected solar winds detected."
+        "Coffee machine offline again.",
+        "Anyone seen the rover?",
+        "Stars look brighter tonight.",
+        "Lost the calibration data.",
+        "System reboot scheduled at 0300.",
+        "Alien artifact found nearby.",
+        "Rover stuck in the mud.",
+        "Signal strength dropping fast.",
+        "Emergency drill in 10 minutes.",
+        "New shipment of supplies arrived.",
+        "Strange noises from the vents.",
+        "Crew morale is high.",
+        "Power fluctuations in sector 9.",
+        "Sensor array needs cleaning.",
+        "Data backlog increasing.",
+        "Holo-deck malfunctioning.",
+        "Lunch is served at 1200.",
+        "Navigation charts updated.",
+        "Security lockdown lifted.",
+        "Unexpected solar winds detected.",
+        "I miss Earth pizza.",
+        "Gravity control glitch in bay 3.",
+        "Recycling unit jammed.",
+        "Holo-projector needs a firmware update.",
+        "Dosage for med station set to 5mg.",
+        "Telemetry logs are corrupt.",
+        "Backup generator has started.",
+        "Crew party tonight in the rec room.",
+        "Warning: maintenance schedule delayed.",
+        "Radiation suit batteries at 40%.",
+        "Training simulation complete.",
+        "Hydroponics yield exceeded expectations.",
+        "We found microbial life samples.",
+        "Life support CO2 scrubbers need replacement.",
+        "Solar panel alignment complete.",
+        "Beacon signal is drifting.",
+        "Fuel reserves at 72%.",
+        "Robot dog malfunctioned again.",
+        "Security bot is on patrol.",
+        "Cargo bay door seal check required.",
+        "Interference on sensor module 12.",
+        "Broadcasting holo-message to all decks.",
+        "Thermal sensor calibration in progress.",
+        "Quantum comms ping received.",
+        "Crew member Lira found a new star chart.",
+        "AI Core Zed is behaving oddly.",
+        "Meteor watch scheduled at 18:00.",
+        "Testing emergency escape pods.",
+        "Supply shipment ETA updated.",
+        "Someone left the airlock open.",
+        "Can anyone fix the coffee grinder?",
+        "3D printer out of filament.",
+        "Who scheduled maintenance during lunch?",
+        "Drone X3 is missing again.",
+        "Found a stowaway microbe in the lab.",
+        "Comms static is getting worse.",
+        "Can someone recalibrate the gravity plates?",
+        "Birthday party for Dex in the rec room.",
+        "Who took my toolkit?",
+        "Running low on chocolate rations.",
+        "Solar flare warning for tomorrow.",
+        "Jax's guitar is out of tune.",
+        "AI Zed wants to play chess.",
+        "Anyone up for a movie night?",
+        "The vent fans are making a weird noise.",
+        "Found a crack in the hydroponics dome.",
+        "Emergency rations taste better than usual.",
+        "Who keeps moving the navigation charts?",
+        "Sera's plants are blooming.",
+        "Voss says the stars are shifting.",
+        "Dex fixed the water recycler again.",
+        "Security drill scheduled for 1500.",
+        "The mess hall smells like ozone.",
+        "The holo-deck is stuck on 'beach' mode.",
+        "Someone painted a smiley on the rover.",
+        "Crew photo at sunset, meet at the viewport.",
+        "Tali is running a first aid class at 17:00.",
+        "Mina baked bread, come to the galley.",
+        "Magnetic boots required in sector 12.",
+        "Meteor shower visible from the upper deck.",
+        "Reminder: submit your daily logs.",
+        "Resupply drone ETA: 2 hours.",
+        "Halv's new haircut is... interesting.",
+        "AI Nyx is requesting a system update.",
+        "Lost comms for 3 minutes, all clear now.",
+        "Who spilled coolant in engineering?",
+        "Radiation badge check at 1400.",
+        "Cargo manifest updated.",
+        "The sunrise was spectacular today.",
+        "Motion detected in unoccupied bay.",
+        "Please return borrowed tools.",
+        "Crew meeting at mark 8.",
+        "Check your air filters.",
+        "Lira found a new mineral sample.",
+        "Varn is working on the drone firmware.",
+        "The rec room projector is fixed.",
+        "Reminder: hydrate regularly.",
+        "Comms blackout drill this evening.",
+        "Who left their helmet in the med bay?",
+        "Gravity feels lighter today.",
+        "Tycho's AI keeps quoting poetry.",
+        "All clear after the last storm.",
+        # Filler phrases appended below
+        "Yep, me!",
+        "Hahah!",
+        "Heh, correct.",
+        "Lol.",
+        "Ahaha!",
+        "Umm...",
+        "Right?",
+        "Uh-huh.",
+        "Hmmmmm...",
+        "Gotcha.",
+        "Sure thing.",
+        "Indeed.",
+        "Copy that.",
+        "Roger.",
+        "Affirmative.",
+        "Negative.",
+        "Nope.",
+        "Maybe.",
+        "Guess so.",
+        "Absolutely.",
+        "Why not?",
     ]
 
     # Additional line types with simulated metrics and messages
@@ -373,9 +492,23 @@ def fake_terminal_line():
     incoming_transmission = (
         f"{Fore.CYAN + Style.BRIGHT}[{t}] INCOMING TRANSMISSION: '{''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ', k=20))}...'"
     )
+    # Detailed system diagnostic with specific subsystem and broadcast reason
+    subsystems = [
+        ("Navigation Sensor Array", "Alignment Calibration"),
+        ("Spectral Analysis Suite", "Radiation Shielding Test"),
+        ("Communications Uplink Module", "Signal Integrity Report"),
+        ("Life Support Air Filtration Unit", "Atmospheric Purity Check"),
+        ("Power Distribution Grid", "Load Balancing Assessment"),
+        ("Thermal Regulation System", "Heat Dissipation Test"),
+        ("Quantum Drive Stabilizers", "Flux Resonance Scan"),
+        ("Graviton Detector Matrix", "Field Coherence Verification")
+    ]
+    subsystem_name, reason = random.choice(subsystems)
+    percent = random.randint(70, 100)
+    status_word = random.choice(["OK", "WARN", "FAIL"])
     system_diagnostic = (
-        f"{Fore.YELLOW + Style.BRIGHT}[{t}] SYSTEM DIAGNOSTIC: {random.choice(['Power', 'Nav', 'Comm', 'Life Support', 'Sensors'])} at "
-        f"{random.randint(70, 100)}%, Status: {random.choice(['OK', 'WARN', 'FAIL'])}"
+        f"{Fore.YELLOW + Style.BRIGHT}[{t}] SYSTEM DIAGNOSTIC BROADCAST: {subsystem_name} at {percent}%, "
+        f"Status: {status_word} ({reason})"
     )
     environmental_reading = (
         f"{Fore.GREEN + Style.BRIGHT}[{t}] ENVIRONMENTAL: Pressure={random.uniform(0.5, 2.0):.2f} atm, Humidity={random.randint(10, 90)}%, "
@@ -450,6 +583,45 @@ def fake_terminal_line():
 
     encryption_hash_line = encryption_hash_event()
 
+    # Download-related messages
+    download_files = [
+        "firmware_update_v3.bin",
+        "sensor_dump_0729.log",
+        "nav_chart_data.pkg",
+        "report_summary.txt",
+        "gravity_wave_data.csv",
+        "system_patch.iso"
+    ] + [f"firmware_patch_{i:03d}.bin" for i in range(1, 51)] \
+      + [f"sensor_log_{i:03d}.log" for i in range(1, 26)] \
+      + [f"data_archive_{i:03d}.pkg" for i in range(1, 26)]
+    df = random.choice(download_files)
+    # Determine file size with a random unit
+    unit = random.choice(["KB", "MB", "GB"])
+    if unit == "KB":
+        size = random.randint(100, 10240)  # KB
+    elif unit == "MB":
+        size = random.randint(1, 1024)     # MB
+    else:
+        size = random.randint(1, 10)       # GB
+
+    # Determine download speed in KB/s
+    speed_kb_s = random.uniform(50, 2048)  # KB/s
+
+    # Compute ETA
+    size_bytes = size * (1024 if unit == "KB" else 1024**2 if unit == "MB" else 1024**3)
+    time_sec = size_bytes / (speed_kb_s * 1024)
+    hours = int(time_sec // 3600)
+    minutes = int((time_sec % 3600) // 60)
+    seconds = int(time_sec % 60)
+    if hours:
+        eta = f"{hours}h {minutes}m {seconds}s"
+    elif minutes:
+        eta = f"{minutes}m {seconds}s"
+    else:
+        eta = f"{seconds}s"
+
+    download_line = f"{color}[{t}] DOWNLOAD INITIATED: {df} Size:{size}{unit} Speed:{speed_kb_s:.2f} KB/s ETA:{eta}"
+
     # Multi-line message chance
     multi_line_chance = 0.05
     if random.random() < multi_line_chance:
@@ -464,7 +636,7 @@ def fake_terminal_line():
         return [header] + details
 
     # Graph display chance
-    graph_chance = 0.05
+    graph_chance = 0.02
     if random.random() < graph_chance:
         graph_lines = generate_random_graph()
         delim = Fore.GREEN + Style.BRIGHT + "==================== GRAPH START ===================="
@@ -489,7 +661,7 @@ def fake_terminal_line():
         delim_end = Fore.GREEN + Style.BRIGHT + "==================== STAR SYSTEM MAP END ======================"
         header_msg = Fore.GREEN + Style.BRIGHT + "[t] STAR SYSTEM SCAN: Orbital layout detected"
         map_lines = generate_solar_system_map()
-        return [delim, header_msg] + map_lines + [delim_end]
+        return [header_msg, delim] + map_lines + [delim_end]
 
     # Crew chat line with rank, name, and location
     crew_ranks = ["Commander", "Engineer", "Pilot", "Navigator", "Technician", "Medic", "Security Officer", "Specialist", "AI", "Researcher"]
@@ -525,18 +697,26 @@ def fake_terminal_line():
     else:
         data_stream_line = f"{color}[{t}] {data_stream_template.format(channel=channel)}"
 
+    # Transmission with distance
+    distance_ly = random.uniform(0.5, 5000.0)
+    transmission_line = f"{color}[{t}] TRANSMISSION: {source} reports '{evt}' ({distance_ly:.1f} ly away)"
+
     line_types = [
         f"{color}[{t}] [{channel}] {source} @ {location}: {evt}",
         f"{color}[{t}] SYSTEM STATUS: {source} -> {st}",
-        f"{color}[{t}] TRANSMISSION: {source} reports '{evt}'",
+        transmission_line,
         f"{color}[{t}] SENSOR {random.randint(101,999)}-{random.choice(['A','B','C'])}: {evt} near {location}",
         data_stream_line,
+        crew_chat_line,
+        crew_chat_line,
+        crew_chat_line,
         crew_chat_line,
         detailed_log,
         incoming_transmission,
         system_diagnostic,
         environmental_reading,
         mission_update,
+        download_line,
         encryption_update,
         encryption_hash_line
     ]
@@ -687,6 +867,19 @@ app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
 
+# --- Start background generator thread for SSE broadcast ---
+def _start_generator():
+    # Delay to allow server startup
+    time.sleep(2)
+    while True:
+        line = fake_terminal_line()
+        # print(line)                # log to console
+        broadcast_to_clients(line) # send to clients
+        time.sleep(random.uniform(0.3, 1.8))
+
+threading.Thread(target=_start_generator, daemon=True).start()
+# --- End generator thread setup ---
+
 def broadcast_to_clients(message):
     # message: string or list of strings
     # For SSE, each line should be sent as a separate event (data: ...\n\n)
@@ -722,16 +915,21 @@ def stream():
                     data = data.encode("utf-8")
                 yield data
         except GeneratorExit:
-            pass
+            cleanup()
+            return
 
     q = queue.Queue()
     with clients_lock:
         clients.append(q)
+        now = time.strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{now}] Client connected. Total clients: {len(clients)}")
     # Remove client on disconnect
     def cleanup():
         with clients_lock:
             if q in clients:
                 clients.remove(q)
+                now = time.strftime("%Y-%m-%d %H:%M:%S")
+                print(f"[{now}] Client disconnected. Total clients: {len(clients)}")
     # Use Flask's Response with generator
     return Response(event_stream(q), mimetype="text/event-stream", direct_passthrough=True)
 
@@ -758,13 +956,4 @@ def run_flask():
 
 if __name__ == "__main__":
     print(Fore.GREEN + Style.BRIGHT + "Booting Remote Outpost Terminal...\n")
-    # Start Flask webhook/SSE server in background thread
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
-    # Main loop: generate and broadcast lines
-    while True:
-        line = fake_terminal_line()
-        # slow_print(line, delay=0.0015)
-        # Broadcast generated line to all SSE clients
-        broadcast_to_clients(line)
-        time.sleep(random.uniform(0.5, 3))  # varied rhythm
+    run_flask()

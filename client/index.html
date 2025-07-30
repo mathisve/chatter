@@ -196,7 +196,6 @@
             </div>
             <div class="text-right distance-info">
                 <div>DISTANCE TO EARTH: 1,206 LIGHT YEARS</div>
-                <div>LAST HUMAN CONTACT: 847 DAYS AGO</div>
             </div>
         </div>
         
@@ -269,7 +268,11 @@
         }
 
         // Ensure we always connect to the explicit server URL for EventSource
-        const EVENTSOURCE_URL = 'http://localhost:5050/stream';
+        const EVENTSOURCE_URL = 'https://outpost.homek8s.com/stream';
+        const eventSource = new EventSource(EVENTSOURCE_URL);
+        let pendingMessages = 0;
+        let connectionErrorPending = false;
+        let skipCount = 0;
 
         // Use or create a #log container
         let logContainer = document.getElementById('log');
@@ -291,14 +294,15 @@
         logContainer.appendChild(bootDiv);
         logContainer.appendChild(document.createElement('br'));
 
-        const eventSource = new EventSource(EVENTSOURCE_URL);
+        // const eventSource = new EventSource(EVENTSOURCE_URL); // Instantiated above in debug code
+        eventSource.onopen = function() {};
+        eventSource.onclose = function() {};
 
         // Queue to ensure messages are processed sequentially
         let messageChain = Promise.resolve();
 
         // Handler that slow-prints a single event with proper ANSI handling
         async function processEvent(event) {
-            console.log("Received message:", event.data);
             const lines = event.data.split("\n");
             for (const line of lines) {
                 const lineWrapper = document.createElement("div");
@@ -345,20 +349,55 @@
                 lineWrapper.innerHTML += "</span><br>";
                 await new Promise(res => setTimeout(res, 20));
             }
+            pendingMessages--;
+            if (pendingMessages === 0 && connectionErrorPending) {
+                const errorSpan = document.createElement('span');
+                errorSpan.style.color = '#ef4444';
+                errorSpan.textContent = '[⚠ TRANSMISSION ERROR - Deep space interference detected]';
+                logContainer.appendChild(errorSpan);
+                logContainer.appendChild(document.createElement('br'));
+                const retrySpan = document.createElement('span');
+                retrySpan.style.color = '#ef4444';
+                retrySpan.textContent = '[Attempting to re-establish connection to Earth...]';
+                logContainer.appendChild(retrySpan);
+                logContainer.appendChild(document.createElement('br'));
+                connectionErrorPending = false;
+            }
         }
 
         eventSource.onmessage = function(event) {
-            // Queue processing to ensure sequential printing
+            // Increment pendingMessages
+            pendingMessages++;
+            // If too many pending, schedule dropping the next 50 messages
+            if (pendingMessages > 100 && skipCount === 0) {
+                skipCount = 50;
+                pendingMessages -= 50;
+            }
+            // If skipping, drop this event
+            if (skipCount > 0) {
+                skipCount--;
+                pendingMessages--;
+                return;
+            }
+            // Otherwise, queue processing
             messageChain = messageChain.then(() => processEvent(event));
         };
 
         eventSource.onerror = function(err) {
-            console.error('EventSource connection error:', err);
-            const errorSpan = document.createElement('span');
-            errorSpan.style.color = '#ef4444';
-            errorSpan.innerHTML = '<br>[⚠ TRANSMISSION ERROR - Deep space interference detected]<br>[Attempting to re-establish connection to Earth...]<br>';
-            logContainer.appendChild(errorSpan);
-            logContainer.scrollTop = logContainer.scrollHeight;
+            if (pendingMessages === 0) {
+                const errorSpan = document.createElement('span');
+                errorSpan.style.color = '#ef4444';
+                errorSpan.textContent = '[⚠ TRANSMISSION ERROR - Deep space interference detected]';
+                logContainer.appendChild(errorSpan);
+                logContainer.appendChild(document.createElement('br'));
+                const retrySpan = document.createElement('span');
+                retrySpan.style.color = '#ef4444';
+                retrySpan.textContent = '[Attempting to re-establish connection to Earth...]';
+                logContainer.appendChild(retrySpan);
+                logContainer.appendChild(document.createElement('br'));
+            } else {
+                connectionErrorPending = true;
+            }
         };
     </script>
 </body>
