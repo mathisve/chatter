@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Outpost Terminal - Kepler-442b</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap');
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 30%, #16213e 70%, #0f3460 100%);
+            overflow: hidden;
+        }
+        
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite alternate;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+        }
+        
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+        
+        .planet-surface {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: linear-gradient(180deg, 
+                transparent 0%, 
+                rgba(139, 69, 19, 0.1) 15%, 
+                rgba(160, 82, 45, 0.25) 60%, 
+                rgba(101, 67, 33, 0.4) 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        .distant-mountains {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80%;
+            background: linear-gradient(to right, 
+                rgba(75, 85, 99, 0.6) 0%, 
+                rgba(107, 114, 128, 0.4) 20%, 
+                rgba(75, 85, 99, 0.7) 40%, 
+                rgba(107, 114, 128, 0.3) 60%, 
+                rgba(75, 85, 99, 0.5) 80%, 
+                rgba(107, 114, 128, 0.6) 100%);
+            clip-path: polygon(0 100%, 8% 35%, 18% 45%, 25% 25%, 35% 40%, 45% 20%, 55% 35%, 65% 15%, 75% 30%, 85% 10%, 95% 25%, 100% 35%, 100% 100%);
+            filter: blur(1px);
+        }
+        
+        .atmospheric-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center top, 
+                rgba(102, 252, 241, 0.03) 0%, 
+                rgba(6, 214, 160, 0.02) 30%, 
+                transparent 70%);
+            pointer-events: none;
+            z-index: 3;
+        }
+        
+        .terminal-container {
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(6, 214, 160, 0.4);
+            box-shadow: 
+                0 0 30px rgba(6, 214, 160, 0.2),
+                inset 0 1px 0 rgba(102, 252, 241, 0.1);
+            border-radius: 2px;
+        }
+        
+        .terminal-header {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 1px solid rgba(6, 214, 160, 0.4);
+            color: rgba(102, 252, 241, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #06d6a0;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px rgba(6, 214, 160, 0.6);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { 
+                opacity: 1; 
+                box-shadow: 0 0 10px rgba(6, 214, 160, 0.6);
+            }
+            50% { 
+                opacity: 0.3; 
+                box-shadow: 0 0 20px rgba(6, 214, 160, 0.3);
+            }
+        }
+        
+        .terminal-content {
+            background: rgba(0, 0, 0, 0.92);
+            color: #66fcf1;
+            text-shadow: 0 0 8px rgba(102, 252, 241, 0.5);
+            backdrop-filter: blur(1px);
+        }
+        
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(102, 252, 241, 0.5), transparent);
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+            z-index: 15;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        
+        .distance-info {
+            color: rgba(102, 252, 241, 0.7);
+            font-size: 0.75rem;
+        }
+        
+        .binary-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .binary-char {
+            position: absolute;
+            color: rgba(102, 252, 241, 0.15);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            animation: fall linear infinite;
+        }
+        
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Starfield -->
+    <div class="stars" id="starfield"></div>
+    
+    <!-- Binary rain effect -->
+    <div class="binary-rain" id="binaryRain"></div>
+    
+    <!-- Planet surface -->
+    <div class="planet-surface">
+        <div class="distant-mountains"></div>
+    </div>
+    
+    <!-- Terminal -->
+    <div class="terminal-container w-full h-screen max-w-none mx-0 bg-transparent">
+        <!-- Terminal header -->
+        <div class="terminal-header px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="status-indicator"></div>
+                <span class="text-sm font-medium">OUTPOST TERMINAL - KEPLER-442B</span>
+            </div>
+            <div class="text-right distance-info">
+                <div>DISTANCE TO EARTH: 1,206 LIGHT YEARS</div>
+            </div>
+        </div>
+        
+        <!-- Terminal content -->
+        <div id="log" class="terminal-content relative overflow-y-scroll font-mono p-4" style="height: calc(100vh - 60px);"></div>
+        
+        <!-- Scan line effect -->
+        <div class="scan-line"></div>
+    </div>
+
+    <script>
+        // Create starfield
+        function createStars() {
+            const starfield = document.getElementById('starfield');
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 70 + '%'; // Keep stars in upper 70% of screen
+                star.style.width = star.style.height = Math.random() * 3 + 1 + 'px';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                starfield.appendChild(star);
+            }
+        }
+        
+        // Create subtle binary rain
+        function createBinaryRain() {
+            const binaryRain = document.getElementById('binaryRain');
+            setInterval(() => {
+                if (Math.random() < 0.1) { // Sparse rain
+                    const char = document.createElement('div');
+                    char.className = 'binary-char';
+                    char.textContent = Math.random() < 0.5 ? '0' : '1';
+                    char.style.left = Math.random() * 100 + '%';
+                    char.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                    binaryRain.appendChild(char);
+                    
+                    // Remove after animation
+                    setTimeout(() => {
+                        if (char.parentNode) {
+                            char.parentNode.removeChild(char);
+                        }
+                    }, 5000);
+                }
+            }, 200);
+        }
+        
+        // Initialize visual effects
+        createStars();
+        createBinaryRain();
+
+        // ANSI to HTML conversion with modern colors
+        const ansiColors = {
+            '30': '#1a1a1a','31': '#ff6b6b','32': '#06d6a0','33': '#ffd93d',
+            '34': '#4ecdc4','35': '#a8e6cf','36': '#66fcf1','37': '#f8f9fa',
+            '90': '#6c757d','91': '#ff8a80','92': '#69f0ae','93': '#ffeb3b',
+            '94': '#81d4fa','95': '#ce93d8','96': '#84ffff','97': '#ffffff'
+        };
+
+        function ansiToHtml(text) {
+            return text
+                .replace(/\x1b\[0m/g, "</span>")
+                .replace(/\x1b\[(\d+)m/g, (match, code) => {
+                    if (ansiColors[code]) {
+                        return `<span style="color:${ansiColors[code]}">`;
+                    }
+                    return "";
+                });
+        }
+
+        // Ensure we always connect to the explicit server URL for EventSource
+        const EVENTSOURCE_URL = 'https://outpost.homek8s.com/stream';
+        const eventSource = new EventSource(EVENTSOURCE_URL);
+        let pendingMessages = 0;
+        let connectionErrorPending = false;
+        let skipCount = 0;
+
+        // Use or create a #log container
+        let logContainer = document.getElementById('log');
+        if (!logContainer) {
+            logContainer = document.createElement('div');
+            logContainer.id = 'log';
+            logContainer.className = 'terminal-content relative overflow-y-auto font-mono p-4';
+            logContainer.style.height = 'calc(100vh - 60px)';
+            document.body.appendChild(logContainer);
+        }
+
+        // Make sure the log container is visible
+        logContainer.style.display = 'block';
+        logContainer.style.whiteSpace = 'pre-wrap';
+
+        // Simple boot message
+        const bootDiv = document.createElement('div');
+        bootDiv.textContent = 'Remote Outpost Terminal - Ready';
+        logContainer.appendChild(bootDiv);
+        logContainer.appendChild(document.createElement('br'));
+
+        // const eventSource = new EventSource(EVENTSOURCE_URL); // Instantiated above in debug code
+        eventSource.onopen = function() {};
+        eventSource.onclose = function() {};
+
+        // Queue to ensure messages are processed sequentially
+        let messageChain = Promise.resolve();
+
+        // Handler that slow-prints a single event with proper ANSI handling
+        async function processEvent(event) {
+            const lines = event.data.split("\n");
+            for (const line of lines) {
+                const lineWrapper = document.createElement("div");
+                logContainer.appendChild(lineWrapper);
+                let buffer = "";
+                let displayBuffer = "";
+                let inEscapeSequence = false;
+                let escapeBuffer = "";
+                
+                for (const ch of line) {
+                    buffer += ch;
+                    
+                    // Check if we're starting an ANSI escape sequence
+                    if (ch === '\x1b') {
+                        inEscapeSequence = true;
+                        escapeBuffer = ch;
+                        continue;
+                    }
+                    
+                    // If we're in an escape sequence, collect it
+                    if (inEscapeSequence) {
+                        escapeBuffer += ch;
+                        // Check if sequence is complete (ends with 'm' for color codes)
+                        if (ch === 'm') {
+                            inEscapeSequence = false;
+                            displayBuffer += escapeBuffer;
+                            lineWrapper.innerHTML = ansiToHtml(displayBuffer);
+                            escapeBuffer = "";
+                        }
+                        // Continue without displaying partial escape sequences
+                        logContainer.scrollTop = logContainer.scrollHeight;
+                        await new Promise(res => setTimeout(res, 10));
+                        continue;
+                    }
+                    
+                    // Normal character - add to display buffer and show
+                    displayBuffer += ch;
+                    lineWrapper.innerHTML = ansiToHtml(displayBuffer);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                    await new Promise(res => setTimeout(res, 10));
+                }
+                
+                // After full line, add reset and line break
+                lineWrapper.innerHTML += "</span><br>";
+                await new Promise(res => setTimeout(res, 20));
+            }
+            pendingMessages--;
+            if (pendingMessages === 0 && connectionErrorPending) {
+                const errorSpan = document.createElement('span');
+                errorSpan.style.color = '#ef4444';
+                errorSpan.textContent = '[⚠ TRANSMISSION ERROR - Deep space interference detected]';
+                logContainer.appendChild(errorSpan);
+                logContainer.appendChild(document.createElement('br'));
+                const retrySpan = document.createElement('span');
+                retrySpan.style.color = '#ef4444';
+                retrySpan.textContent = '[Attempting to re-establish connection to Earth...]';
+                logContainer.appendChild(retrySpan);
+                logContainer.appendChild(document.createElement('br'));
+                connectionErrorPending = false;
+            }
+        }
+
+        eventSource.onmessage = function(event) {
+            // Increment pendingMessages
+            pendingMessages++;
+            // If too many pending, schedule dropping the next 50 messages
+            if (pendingMessages > 100 && skipCount === 0) {
+                skipCount = 50;
+                pendingMessages -= 50;
+            }
+            // If skipping, drop this event
+            if (skipCount > 0) {
+                skipCount--;
+                pendingMessages--;
+                return;
+            }
+            // Otherwise, queue processing
+            messageChain = messageChain.then(() => processEvent(event));
+        };
+
+        eventSource.onerror = function(err) {
+            if (pendingMessages === 0) {
+                const errorSpan = document.createElement('span');
+                errorSpan.style.color = '#ef4444';
+                errorSpan.textContent = '[⚠ TRANSMISSION ERROR - Deep space interference detected]';
+                logContainer.appendChild(errorSpan);
+                logContainer.appendChild(document.createElement('br'));
+                const retrySpan = document.createElement('span');
+                retrySpan.style.color = '#ef4444';
+                retrySpan.textContent = '[Attempting to re-establish connection to Earth...]';
+                logContainer.appendChild(retrySpan);
+                logContainer.appendChild(document.createElement('br'));
+            } else {
+                connectionErrorPending = true;
+            }
+        };
+    </script>
+</body>
+</html>
